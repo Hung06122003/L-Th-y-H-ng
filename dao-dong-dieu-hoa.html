@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng Dao động điều hòa & Chuyển động tròn đều</title>
+    <meta name="description" content="Dashboard mô phỏng vật lý: Mối liên hệ giữa dao động điều hòa và chuyển động tròn đều. Sử dụng GeoGebra API.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.geogebra.org/apps/deployggb.js"></script>
+    <style>
+        /* ===== Reset & Base ===== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #07060e 0%, #130f28 40%, #0d1a2e 100%);
+            color: #d0d0e0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 24px;
+            overflow-x: hidden;
+        }
+
+        /* ===== Header ===== */
+        .header {
+            text-align: center;
+            margin-bottom: 22px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: clamp(20px, 3vw, 30px);
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #00d4ff 0%, #8b5cf6 40%, #ff6b8a 70%, #f59e0b 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 5s ease-in-out infinite;
+        }
+
+        .header p {
+            color: #6b6b8d;
+            font-size: 13px;
+            font-weight: 400;
+            margin-top: 6px;
+            letter-spacing: 0.2px;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* ===== Dashboard Layout ===== */
+        .dashboard {
+            display: flex;
+            gap: 22px;
+            width: 100%;
+            max-width: 1360px;
+            flex: 1;
+            min-height: 620px;
+        }
+
+        /* ===== Panel Base ===== */
+        .panel {
+            background: rgba(255, 255, 255, 0.035);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 20px;
+            box-shadow:
+                0 8px 40px rgba(0, 0, 0, 0.45),
+                0 1px 0 rgba(255, 255, 255, 0.04) inset;
+            overflow: hidden;
+        }
+
+        /* ===== Control Panel (Left) ===== */
+        .control-panel {
+            width: 370px;
+            min-width: 340px;
+            padding: 26px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .panel-title .icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        /* ===== Control Groups ===== */
+        .control-group {
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid rgba(255, 255, 255, 0.055);
+            border-radius: 14px;
+            padding: 16px 18px;
+            transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .control-group:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.045);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .control-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #8b8baa;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-label .symbol {
+            font-size: 20px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        /* ===== Range Input ===== */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        input[type="range"]:hover { opacity: 0.9; }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.25);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* ===== Number Input ===== */
+        input[type="number"] {
+            width: 82px;
+            padding: 9px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        input[type="number"]:focus {
+            border-color: rgba(0, 212, 255, 0.6);
+            box-shadow: 0 0 16px rgba(0, 212, 255, 0.2);
+        }
+
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] { -moz-appearance: textfield; }
+
+        /* ===== Color-coded Controls ===== */
+
+        /* Amplitude — Cyan */
+        .control-amplitude .symbol { color: #00d4ff; }
+        .control-amplitude input[type="range"] {
+            background: linear-gradient(90deg, #0a2a3a 0%, #00d4ff 100%);
+        }
+        .control-amplitude input[type="range"]::-webkit-slider-thumb {
+            box-shadow: 0 0 14px rgba(0, 212, 255, 0.55);
+        }
+        .control-amplitude input[type="number"]:focus {
+            border-color: rgba(0, 212, 255, 0.6);
+            box-shadow: 0 0 16px rgba(0, 212, 255, 0.2);
+        }
+
+        /* Omega — Purple */
+        .control-omega .symbol { color: #8b5cf6; }
+        .control-omega input[type="range"] {
+            background: linear-gradient(90deg, #1a1040 0%, #8b5cf6 100%);
+        }
+        .control-omega input[type="range"]::-webkit-slider-thumb {
+            box-shadow: 0 0 14px rgba(139, 92, 246, 0.55);
+        }
+        .control-omega input[type="number"]:focus {
+            border-color: rgba(139, 92, 246, 0.6);
+            box-shadow: 0 0 16px rgba(139, 92, 246, 0.2);
+        }
+
+        /* Phi — Amber */
+        .control-phi .symbol { color: #f59e0b; }
+        .control-phi input[type="range"] {
+            background: linear-gradient(90deg, #2a1f00 0%, #f59e0b 100%);
+        }
+        .control-phi input[type="range"]::-webkit-slider-thumb {
+            box-shadow: 0 0 14px rgba(245, 158, 11, 0.55);
+        }
+        .control-phi input[type="number"]:focus {
+            border-color: rgba(245, 158, 11, 0.6);
+            box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);
+        }
+
+        /* ===== Equation Display ===== */
+        .equation-box {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.06) 0%, rgba(139, 92, 246, 0.06) 100%);
+            border: 1px solid rgba(0, 212, 255, 0.12);
+            border-radius: 14px;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            animation: equationGlow 4s ease-in-out infinite;
+        }
+
+        @keyframes equationGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.05); }
+            50% { box-shadow: 0 0 35px rgba(0, 212, 255, 0.12), 0 0 10px rgba(139, 92, 246, 0.06); }
+        }
+
+        .equation-box .eq-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.8px;
+            color: #6b6b8d;
+            margin-bottom: 14px;
+        }
+
+        .equation-text {
+            font-size: 22px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            color: #e8e8f0;
+            letter-spacing: 0.5px;
+        }
+
+        .eq-A { color: #00d4ff; font-weight: 700; }
+        .eq-omega { color: #8b5cf6; font-weight: 700; }
+        .eq-phi { color: #f59e0b; font-weight: 700; }
+
+        /* ===== Legend ===== */
+        .legend {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            margin-top: auto;
+        }
+
+        .legend-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.8px;
+            color: #6b6b8d;
+            margin-bottom: 2px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12.5px;
+            color: #9999b5;
+        }
+
+        .legend-item b {
+            color: #ccc;
+            font-weight: 600;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+        }
+
+        .legend-line {
+            width: 26px;
+            height: 3px;
+            flex-shrink: 0;
+            border-radius: 2px;
+        }
+
+        .legend-line.dashed {
+            background: repeating-linear-gradient(
+                90deg,
+                #f59e0b 0px, #f59e0b 5px,
+                transparent 5px, transparent 9px
+            );
+        }
+
+        .legend-line.solid {
+            border-radius: 2px;
+        }
+
+        /* ===== Simulation Panel (Right) ===== */
+        .simulation-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .sim-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            padding: 18px 24px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            flex-shrink: 0;
+        }
+
+        .sim-header .icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+
+        #ggb-element {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            min-height: 500px;
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 960px) {
+            body { padding: 14px; }
+            .dashboard {
+                flex-direction: column;
+                min-height: auto;
+            }
+            .control-panel {
+                width: 100%;
+                min-width: auto;
+            }
+            #ggb-element {
+                min-height: 450px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== Header ===== -->
+    <header class="header">
+        <h1>⚛ Dao động điều hòa &amp; Chuyển động tròn đều</h1>
+        <p>Mô phỏng mối liên hệ giữa hình chiếu chuyển động tròn đều lên trục Ox và dao động điều hòa</p>
+    </header>
+
+    <!-- ===== Dashboard ===== -->
+    <main class="dashboard">
+
+        <!-- ===== LEFT: Control Panel ===== -->
+        <section class="panel control-panel" id="control-panel">
+
+            <div class="panel-title">
+                <div class="icon" style="background: rgba(0, 212, 255, 0.12); color: #00d4ff;">⚙</div>
+                Bảng điều khiển
+            </div>
+
+            <!-- Amplitude A -->
+            <div class="control-group control-amplitude">
+                <div class="control-label">
+                    <span class="symbol">A</span> Biên độ
+                </div>
+                <div class="input-row">
+                    <input type="range" id="A-slider" min="0.5" max="6" step="0.1" value="3">
+                    <input type="number" id="A-number" value="3" step="0.1">
+                </div>
+            </div>
+
+            <!-- Angular frequency ω -->
+            <div class="control-group control-omega">
+                <div class="control-label">
+                    <span class="symbol">ω</span> Tần số góc (rad/s)
+                </div>
+                <div class="input-row">
+                    <input type="range" id="omega-slider" min="0.1" max="10" step="0.1" value="2">
+                    <input type="number" id="omega-number" value="2" step="0.1">
+                </div>
+            </div>
+
+            <!-- Initial phase φ -->
+            <div class="control-group control-phi">
+                <div class="control-label">
+                    <span class="symbol">φ</span> Pha ban đầu (rad)
+                </div>
+                <div class="input-row">
+                    <input type="range" id="phi-slider" min="-3.14" max="3.14" step="0.01" value="0">
+                    <input type="number" id="phi-number" value="0" step="0.01">
+                </div>
+            </div>
+
+            <!-- Equation display -->
+            <div class="equation-box">
+                <div class="eq-title">Phương trình dao động</div>
+                <div class="equation-text" id="equation-display">
+                    x = <span class="eq-A">3.00</span>·cos(<span class="eq-omega">2.00</span>·t + <span class="eq-phi">0.00</span>)
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="legend">
+                <div class="legend-title">Chú giải</div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #00d4ff; box-shadow: 0 0 10px rgba(0,212,255,0.5);"></div>
+                    <span><b>M</b> — Chuyển động tròn đều</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #ff6b8a; box-shadow: 0 0 10px rgba(255,107,138,0.5);"></div>
+                    <span><b>P</b> — Dao động điều hòa (hình chiếu)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line solid" style="background: #00b4d8;"></div>
+                    <span>Bán kính OM</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line dashed"></div>
+                    <span>Đường gióng M → P</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #fff; width: 8px; height: 8px; box-shadow: 0 0 6px rgba(255,255,255,0.4);"></div>
+                    <span><b>O</b> — Tâm quỹ đạo tròn</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== RIGHT: Simulation Panel ===== -->
+        <section class="panel simulation-panel">
+            <div class="sim-header">
+                <div class="icon" style="background: rgba(139, 92, 246, 0.12); color: #8b5cf6;">▶</div>
+                Khung mô phỏng GeoGebra
+            </div>
+            <div id="ggb-element"></div>
+        </section>
+
+    </main>
+
+    <!-- ===== JavaScript ===== -->
+    <script>
+        // ============================================================
+        //  STATE
+        // ============================================================
+        let currentA     = 3;
+        let currentOmega = 2;
+        let currentPhi   = 0;
+        let ggbReady     = false;
+
+        // ============================================================
+        //  CONTROL PANEL LOGIC
+        // ============================================================
+        function updateParam(param, rawValue) {
+            var numVal = parseFloat(rawValue);
+            if (isNaN(numVal)) return;
+
+            var slider      = document.getElementById(param + '-slider');
+            var numberInput  = document.getElementById(param + '-number');
+
+            // Sync number input
+            numberInput.value = numVal;
+
+            // Sync slider (clamped to its own min/max)
+            var lo = parseFloat(slider.min);
+            var hi = parseFloat(slider.max);
+            slider.value = Math.min(Math.max(numVal, lo), hi);
+
+            // Store
+            if (param === 'A')     currentA     = numVal;
+            if (param === 'omega') currentOmega = numVal;
+            if (param === 'phi')   currentPhi   = numVal;
+
+            // Push to GeoGebra
+            pushToGeoGebra(param, numVal);
+
+            // Update equation text
+            renderEquation();
+        }
+
+        function pushToGeoGebra(param, value) {
+            if (!ggbReady || !window.ggbApplet) return;
+            // GeoGebra variable names match param names: A, omega, phi
+            ggbApplet.setValue(param === 'A' ? 'A' : param, value);
+        }
+
+        function renderEquation() {
+            var display = document.getElementById('equation-display');
+            var aStr = currentA.toFixed(2);
+            var oStr = currentOmega.toFixed(2);
+            var phiSign, phiStr;
+
+            if (currentPhi >= 0) {
+                phiSign = '+';
+                phiStr  = currentPhi.toFixed(2);
+            } else {
+                phiSign = '−';
+                phiStr  = Math.abs(currentPhi).toFixed(2);
+            }
+
+            display.innerHTML =
+                'x = <span class="eq-A">' + aStr + '</span>' +
+                '·cos(<span class="eq-omega">' + oStr + '</span>' +
+                '·t ' + phiSign + ' <span class="eq-phi">' + phiStr + '</span>)';
+        }
+
+        // Bind events (bidirectional sync)
+        ['A', 'omega', 'phi'].forEach(function(param) {
+            document.getElementById(param + '-slider').addEventListener('input', function(e) {
+                updateParam(param, e.target.value);
+            });
+            document.getElementById(param + '-number').addEventListener('input', function(e) {
+                updateParam(param, e.target.value);
+            });
+        });
+
+        // ============================================================
+        //  GEOGEBRA INITIALIZATION
+        // ============================================================
+        function initGeoGebra(api) {
+
+            // ----- 1. Canvas setup -----
+            api.setAxesVisible(false, false);
+            api.setGridVisible(false);
+            api.setCoordSystem(-7, 7, -7, 7);
+
+            // Dark background to match dashboard
+            api.evalCommand("SetBackgroundColor(0.04, 0.035, 0.09)");
+
+            // ----- 2. Physics variables -----
+            api.evalCommand("A = " + currentA);
+            api.evalCommand("omega = " + currentOmega);
+            api.evalCommand("phi = " + currentPhi);
+
+            // ----- 3. Time variable (hidden slider) -----
+            api.evalCommand("t = Slider(0, 100000, 0.01667)");
+            api.setVisible("t", false);
+
+            // ----- 4. Custom Axes via Segment -----
+            api.evalCommand("axPtX1 = (-6.8, 0)");
+            api.evalCommand("axPtX2 = (6.8, 0)");
+            api.evalCommand("axPtY1 = (0, -6.8)");
+            api.evalCommand("axPtY2 = (0, 6.8)");
+            api.evalCommand("axisX = Segment(axPtX1, axPtX2)");
+            api.evalCommand("axisY = Segment(axPtY1, axPtY2)");
+
+            // Hide axis endpoints
+            ["axPtX1", "axPtX2", "axPtY1", "axPtY2"].forEach(function(n) {
+                api.setVisible(n, false);
+            });
+
+            // Style axes
+            api.setColor("axisX", 90, 90, 120);
+            api.setColor("axisY", 90, 90, 120);
+            api.setLineThickness("axisX", 1);
+            api.setLineThickness("axisY", 1);
+
+            // ----- 5. Center Point O -----
+            api.evalCommand("O = (0, 0)");
+            api.setColor("O", 255, 255, 255);
+            api.setPointSize("O", 4);
+            api.setFixed("O", true);
+
+            // ----- 6. Circle (radius = A) -----
+            api.evalCommand("circ = Circle(O, A)");
+            api.setColor("circ", 75, 100, 180);
+            api.setLineThickness("circ", 2);
+
+            // ----- 7. Point M — Circular Motion -----
+            api.evalCommand("M = (A * cos(omega * t + phi), A * sin(omega * t + phi))");
+            api.setColor("M", 0, 212, 255);
+            api.setPointSize("M", 7);
+
+            // ----- 8. Point P — SHM (projection on Ox) -----
+            api.evalCommand("P = (A * cos(omega * t + phi), 0)");
+            api.setColor("P", 255, 107, 138);
+            api.setPointSize("P", 7);
+
+            // ----- 9. Radius segment O → M -----
+            api.evalCommand("radius = Segment(O, M)");
+            api.setColor("radius", 0, 180, 230);
+            api.setLineThickness("radius", 3);
+
+            // ----- 10. Projection line M → P (dashed) -----
+            api.evalCommand("projection = Segment(M, P)");
+            api.setColor("projection", 245, 158, 11);
+            api.setLineThickness("projection", 2);
+            api.setLineStyle("projection", 2);   // dashed
+
+            // ----- 11. HIDE ALL LABELS (strict rule) -----
+            var allObj = [
+                "A", "omega", "phi", "t",
+                "axPtX1", "axPtX2", "axPtY1", "axPtY2",
+                "axisX", "axisY",
+                "O", "circ", "M", "P",
+                "radius", "projection"
+            ];
+            allObj.forEach(function(name) {
+                api.setLabelVisible(name, false);
+            });
+
+            // ----- 12. Lock axis endpoint objects -----
+            ["axPtX1", "axPtX2", "axPtY1", "axPtY2", "O"].forEach(function(n) {
+                api.setFixed(n, true);
+            });
+
+            // ----- 13. Start Animation -----
+            api.setAnimating("t", true);
+            api.setAnimationSpeed("t", 1);
+            api.startAnimation();
+
+            // Mark ready
+            ggbReady = true;
+        }
+
+        // ============================================================
+        //  INJECT GEOGEBRA APPLET
+        // ============================================================
+        window.addEventListener('DOMContentLoaded', function() {
+            // Small delay so CSS layout has settled and we can measure the container
+            setTimeout(function() {
+                var container = document.getElementById('ggb-element');
+                var rect      = container.getBoundingClientRect();
+                var w = Math.max(Math.floor(rect.width) - 20, 480);
+                var h = Math.max(Math.floor(rect.height) - 20, 440);
+
+                var params = {
+                    "id":                   "ggbApplet",
+                    "width":                w,
+                    "height":               h,
+                    "showToolBar":          false,
+                    "showMenuBar":          false,
+                    "showAlgebraInput":     false,
+                    "allowStyleBar":        false,
+                    "enableRightClick":     false,
+                    "enableShiftDragZoom":  false,
+                    "enableLabelDrags":     false,
+                    "showResetIcon":        false,
+                    "perspective":          "G",
+                    "borderColor":          "#0a0920",
+                    "appletOnLoad":         function(api) {
+                        initGeoGebra(api);
+                    }
+                };
+
+                var applet = new GGBApplet(params, true);
+                applet.inject('ggb-element');
+            }, 150);
+        });
+    </script>
+</body>
+</html>
